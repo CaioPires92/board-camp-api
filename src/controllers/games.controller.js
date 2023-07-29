@@ -1,25 +1,5 @@
 import { db } from '../database/database.connection.js'
 
-export async function getGames(req, res) {
-  try {
-    const games = await db.query(`SELECT * FROM games;`)
-    res.send(games.rows)
-  } catch (err) {
-    res.status(500).send(err.message)
-  }
-}
-
-// export async function getReceitaById(req, res) {
-//   const { id } = req.params
-
-//   try {
-//     const receita = await db.query(`SELECT * FROM receitas WHERE id=$1;`, [id])
-//     res.send(receita.rows[0])
-//   } catch (err) {
-//     res.status(500).send(err.message)
-//   }
-// }
-
 export async function postGames(req, res) {
   const { name, image, stockTotal, pricePerDay } = req.body
 
@@ -57,6 +37,26 @@ export async function postGames(req, res) {
     res.status(500).send('Erro ao inserir game no banco de dados.')
   }
 }
+
+export async function getGames(req, res) {
+  try {
+    const games = await db.query(`SELECT * FROM games;`)
+    res.send(games.rows)
+  } catch (err) {
+    res.status(500).send(err.message)
+  }
+}
+
+// export async function getReceitaById(req, res) {
+//   const { id } = req.params
+
+//   try {
+//     const receita = await db.query(`SELECT * FROM receitas WHERE id=$1;`, [id])
+//     res.send(receita.rows[0])
+//   } catch (err) {
+//     res.status(500).send(err.message)
+//   }
+// }
 
 // export async function deleteReceita(req, res) {
 //   res.send('deleteReceita')
