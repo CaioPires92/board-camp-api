@@ -61,6 +61,70 @@ export async function postRentals(req, res) {
   }
 }
 
+export async function returnRentals(req, res) {
+  const { id } = req.params
+
+  try {
+    const rentalQuery = 'SELECT * FROM rentals WHERE id = $1'
+    const rentalResult = await db.query(rentalQuery, [id])
+
+    if (rentalResult.rows.length === 0) {
+      return res.status(404).send('Aluguel não encontrado')
+    }
+
+    const rental = rentalResult.rows[0]
+
+    // console.log(rental)
+
+    if (rental.returnDate !== null) {
+      return res.status(400).send('Aluguel já foi finalizado')
+    }
+
+    const returnDate = dayjs()
+
+    const rentDate = dayjs(rental.rentDate)
+
+    if (!returnDate.isValid() || !rentDate.isValid()) {
+      return res.status(400).send('Datas inválidas')
+    }
+
+    const currentDate = dayjs()
+
+    const daysRented = rental.daysRented // Supondo que rental.daysRented já contenha o número de dias alugados
+
+    // Calcula o dia previsto para devolução (returnDate)
+    const PrevReturnDate = rentDate.add(daysRented, 'day').toDate()
+
+    // Agora, formate a data de retorno para o formato "YYYY-MM-DD"
+
+    console.log('dia previsto para dev', PrevReturnDate)
+
+    // DIA PREVISTO PARA DEVOLUCAO TEM QUE RECEBER O DIA DO ALUGUEL (rentDate) + DIAS alugados (daysRented)
+
+    // SE DIA PREVISTO PARA DEVOLUCAO < DIA DEVOLVIDO (return data) DIAS DE ATRASADOS DEVE RECEBER ESSA DIFERENÇA DE DIAS.
+
+    // e delayfee deve receber dias de atraso * "pricePerDay"
+
+    // PRECISO RECEBER A DIFERENÇA ENTRE DIA ATUAL E DIA DA DEVOLUCAO
+
+    // Atualiza a returnDate no aluguel existente
+    rental.returnDate = returnDate.format('YYYY-MM-DD')
+
+    // Agora, atualize o aluguel no banco de dados com as novas informações
+    const updateQuery = `
+      UPDATE rentals
+      SET "returnDate" = $1, "delayFee" = $2
+      WHERE id = $3
+    `
+    const values = [returnDate.format('YYYY-MM-DD'), rental.delayFee, id]
+    await db.query(updateQuery, values)
+
+    res.status(200).json(rental)
+  } catch (err) {
+    res.status(500).send(err.message)
+  }
+}
+
 export async function getRentals(req, res) {
   try {
     const query = `
@@ -112,121 +176,6 @@ export async function getRentals(req, res) {
   }
 }
 
-// export async function returnRentals(req, res) {
-//   const { id } = req.params
-
-//   try {
-//     const rentalQuery = 'SELECT * FROM rentals WHERE id = $1'
-//     const rentalResult = await db.query(rentalQuery, [id])
-
-//     if (rentalResult.rows.length === 0) {
-//       return res.status(404).send('Aluguel não encontrado')
-//     }
-
-//     const rental = rentalResult.rows[0]
-
-//     if (rental.returnDate !== null) {
-//       return res.status(400).send('Aluguel já foi finalizado')
-//     }
-
-//     const returnDate = dayjs()
-//     const rentDate = dayjs(rental.rentDate)
-
-//     if (!returnDate.isValid() || !rentDate.isValid()) {
-//       return res.status(400).send('Datas inválidas')
-//     }
-
-//     // Verifica se os valores numéricos são válidos
-//     const daysRented = rental.daysRented
-
-//     if (isNaN(daysRented)) {
-//       return res.status(400).send('Valores inválidos para cálculo')
-//     }
-
-//     // Calcula a delayFee
-//     const gamePricePerDay = rental.game ? rental.game.pricePerDay : 0
-//     const delayFee =
-//       Math.max(0, daysRented - rental.daysRented) * gamePricePerDay
-
-//     const updateQuery = `
-//       UPDATE rentals
-//       SET "returnDate" = $1, "delayFee" = $2
-//       WHERE id = $3
-//     `
-//     const values = [returnDate.format('YYYY-MM-DD'), delayFee, id]
-//     await db.query(updateQuery, values)
-
-//     // Agora, formate a data de retorno para o formato "YYYY-MM-DD"
-//     rental.returnDate = returnDate.format('YYYY-MM-DD')
-
-//     res.status(200).json(rental)
-//   } catch (err) {
-//     res.status(500).send(err.message)
-//   }
-// }
-
-export async function returnRentals(req, res) {
-  const { id } = req.params
-
-  try {
-    const rentalQuery = 'SELECT * FROM rentals WHERE id = $1'
-    const rentalResult = await db.query(rentalQuery, [id])
-
-    if (rentalResult.rows.length === 0) {
-      return res.status(404).send('Aluguel não encontrado')
-    }
-
-    const rental = rentalResult.rows[0]
-
-    if (rental.returnDate !== null) {
-      return res.status(400).send('Aluguel já foi finalizado')
-    }
-
-    const returnDate = dayjs()
-
-    const rentDate = dayjs(rental.rentDate)
-
-    if (!returnDate.isValid() || !rentDate.isValid()) {
-      return res.status(400).send('Datas inválidas')
-    }
-
-    // Verifica se a data atual é maior que a returnDate
-    const currentDate = dayjs()
-    if (currentDate.isAfter(returnDate)) {
-      const daysRented = returnDate.diff(rentDate, 'day')
-
-      if (isNaN(daysRented)) {
-        return res.status(400).send('Valores inválidos para cálculo')
-      }
-
-      const gamePricePerDay = rental.game ? rental.game.pricePerDay : 0
-
-      // Calcula o delayFee
-      const delayFee =
-        Math.max(0, daysRented - rental.daysRented) * gamePricePerDay
-
-      // Atualiza a delayFee no aluguel existente
-      rental.delayFee = delayFee
-    }
-
-    // Atualiza a returnDate no aluguel existente
-    rental.returnDate = returnDate.format('YYYY-MM-DD')
-
-    // Agora, atualize o aluguel no banco de dados com as novas informações
-    const updateQuery = `
-      UPDATE rentals
-      SET "returnDate" = $1, "delayFee" = $2
-      WHERE id = $3
-    `
-    const values = [returnDate.format('YYYY-MM-DD'), rental.delayFee, id]
-    await db.query(updateQuery, values)
-
-    res.status(200).json(rental)
-  } catch (err) {
-    res.status(500).send(err.message)
-  }
-}
-
 export async function deleteRental(req, res) {
   const { id } = req.params
 
@@ -257,5 +206,3 @@ export async function deleteRental(req, res) {
     res.status(500).send(err.message)
   }
 }
-
-// O delayFee deveria ser 134, mas foi 0 ao finalizar um aluguel com 2 dias de atraso. Verifique se está calculando o delayFee corretamente. <delay fee esperado> = <preço do jogo por dia> * <dias de atraso> = 67 * 2 = 134 <delay fee calculado> = 0
