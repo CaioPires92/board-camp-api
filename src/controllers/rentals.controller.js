@@ -1,4 +1,5 @@
 import { db } from '../database/database.connection.js'
+import dayjs from 'dayjs'
 
 export async function postRentals(req, res) {
   const { customerId, gameId, daysRented } = req.body
@@ -45,7 +46,6 @@ export async function postRentals(req, res) {
     const gamePricePerDay = gameExist.rows[0].pricePerDay
     const originalPrice = daysRented * gamePricePerDay
 
-    // Obter a data atual para o campo rentDate
     const rentDate = new Date().toISOString()
 
     const insertQuery =
@@ -90,7 +90,7 @@ export async function getRentals(req, res) {
       id: rental.id,
       customerId: rental.customerId,
       gameId: rental.gameId,
-      rentDate: rental.rentDate,
+      rentDate: dayjs(rental.rentDate).format('YYYY-MM-DD'),
       daysRented: rental.daysRented,
       returnDate: rental.returnDate,
       originalPrice: rental.originalPrice,
@@ -109,5 +109,58 @@ export async function getRentals(req, res) {
   } catch (error) {
     console.error('Erro ao obter aluguéis:', error)
     res.status(500).send('Erro ao obter aluguéis do banco de dados.')
+  }
+}
+
+export async function returnRentals(req, res) {
+  const { id } = req.params
+
+  try {
+    const rentalQuery = 'SELECT * FROM rentals WHERE id = $1'
+    const rentalResult = await db.query(rentalQuery, [id])
+
+    if (rentalResult.rows.length === 0) {
+      return res.status(404).send('Aluguel não encontrado')
+    }
+
+    const rental = rentalResult.rows[0]
+
+    if (rental.returnDate !== null) {
+      return res.status(400).send('Aluguel já foi finalizado')
+    }
+
+    const returnDate = dayjs()
+    const rentDate = dayjs(rental.rentDate)
+
+    if (!returnDate.isValid() || !rentDate.isValid()) {
+      return res.status(400).send('Datas inválidas')
+    }
+
+    // Verifica se os valores numéricos são válidos
+    const daysRented = returnDate.diff(rentDate, 'day')
+    const gamePricePerDay = rental.game ? rental.game.pricePerDay : null
+
+    if (isNaN(daysRented) || isNaN(gamePricePerDay)) {
+      return res.status(400).send('Valores inválidos para cálculo')
+    }
+
+    // Verifica se o cálculo da delayFee é válido
+    const delayFee =
+      Math.max(0, daysRented - rental.daysRented) * gamePricePerDay
+
+    const updateQuery = `
+      UPDATE rentals
+      SET "returnDate" = $1, "delayFee" = $2
+      WHERE id = $3
+    `
+    const values = [returnDate.format('YYYY-MM-DD'), delayFee, id]
+    await db.query(updateQuery, values)
+
+    // Agora, formate a data de retorno para o formato "YYYY-MM-DD"
+    rental.returnDate = returnDate.format('YYYY-MM-DD')
+
+    res.status(200).json(rental)
+  } catch (err) {
+    res.status(500).send(err.message)
   }
 }
