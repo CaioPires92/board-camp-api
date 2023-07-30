@@ -65,7 +65,10 @@ export async function returnRentals(req, res) {
   const { id } = req.params
 
   try {
-    const rentalQuery = 'SELECT * FROM rentals WHERE id = $1'
+    // const rentalQuery = 'SELECT * FROM rentals WHERE id = $1'
+    const rentalQuery =
+      'SELECT rentals.*, games."pricePerDay" FROM rentals LEFT JOIN games ON rentals."gameId" = games.id WHERE rentals.id = $1'
+
     const rentalResult = await db.query(rentalQuery, [id])
 
     if (rentalResult.rows.length === 0) {
@@ -88,13 +91,30 @@ export async function returnRentals(req, res) {
 
     const prevReturnDate = rentDate.add(rental.daysRented, 'day')
     const diasAtrasados = Math.max(0, returnDate.diff(prevReturnDate, 'day'))
+    // const diasAtrasados = 2
+    // const prevReturnDate = rentDate.add(
+    //   rental.daysRented + diasAtrasados,
+    //   'day'
+    // )
+
     rental.returnDate = returnDate.format('YYYY-MM-DD')
 
     console.log('prevReturnDate', prevReturnDate)
     console.log('diasAtrasados', diasAtrasados)
+    console.log('rental.returnDate', rental.returnDate)
 
-    const gamePricePerDay = rental.game ? rental.game.pricePerDay : 0
+    console.log('rentDate', rentDate.format('YYYY-MM-DD'))
+    console.log('returnDate', returnDate.format('YYYY-MM-DD'))
+    console.log('prevReturnDate', prevReturnDate.format('YYYY-MM-DD'))
+    console.log('diasAtrasados', diasAtrasados)
+    console.log('rental.game', rental.game)
+    console.log('rental.daysRented', rental.daysRented)
+
+    const gamePricePerDay = rental.pricePerDay
+
     rental.delayFee = diasAtrasados * gamePricePerDay
+
+    console.log('rental.delayFee', rental.delayFee)
 
     const updateQuery = `
     UPDATE rentals
