@@ -190,7 +190,7 @@ export async function returnRentals(req, res) {
     }
 
     // Verifica se os valores numéricos são válidos
-    const daysRented = returnDate.diff(rentDate, 'day')
+    const daysRented = rental.daysRented
 
     if (isNaN(daysRented)) {
       return res.status(400).send('Valores inválidos para cálculo')
