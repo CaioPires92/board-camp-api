@@ -51,6 +51,12 @@ export async function getCustomersById(req, res) {
       return res.status(404).json({ error: 'Cliente não encontrado' })
     }
 
+    const formattedBirthday = dayjs(result.rows[0].birthday).format(
+      'YYYY-MM-DD'
+    )
+
+    result.rows[0].birthday = formattedBirthday
+
     res.send(result.rows[0])
   } catch (err) {
     res.status(500).send(err.message)
