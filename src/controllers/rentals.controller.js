@@ -112,6 +112,59 @@ export async function getRentals(req, res) {
   }
 }
 
+// export async function returnRentals(req, res) {
+//   const { id } = req.params
+
+//   try {
+//     const rentalQuery = 'SELECT * FROM rentals WHERE id = $1'
+//     const rentalResult = await db.query(rentalQuery, [id])
+
+//     if (rentalResult.rows.length === 0) {
+//       return res.status(404).send('Aluguel não encontrado')
+//     }
+
+//     const rental = rentalResult.rows[0]
+
+//     if (rental.returnDate !== null) {
+//       return res.status(400).send('Aluguel já foi finalizado')
+//     }
+
+//     const returnDate = dayjs()
+//     const rentDate = dayjs(rental.rentDate)
+
+//     if (!returnDate.isValid() || !rentDate.isValid()) {
+//       return res.status(400).send('Datas inválidas')
+//     }
+
+//     // Verifica se os valores numéricos são válidos
+//     const daysRented = returnDate.diff(rentDate, 'day')
+//     const gamePricePerDay = rental.game ? rental.game.pricePerDay : null
+
+//     if (isNaN(daysRented) || isNaN(gamePricePerDay)) {
+//       return res.status(400).send('Valores inválidos para cálculo')
+//     }
+
+//     // Verifica se o cálculo da delayFee é válido
+//     const delayFee =
+//       Math.max(0, daysRented - rental.daysRented) * gamePricePerDay
+
+//     const updateQuery = `
+//       UPDATE rentals
+//       SET "returnDate" = $1, "delayFee" = $2
+//       WHERE id = $3
+//     `
+//     const values = [returnDate.format('YYYY-MM-DD'), delayFee, id]
+//     await db.query(updateQuery, values)
+
+//     // Agora, formate a data de retorno para o formato "YYYY-MM-DD"
+//     rental.returnDate = returnDate.format('YYYY-MM-DD')
+
+//     res.status(200).json(rental)
+//   } catch (err) {
+//     res.status(500).send(err.message)
+//   }
+// }
+
 export async function returnRentals(req, res) {
   const { id } = req.params
 
@@ -138,13 +191,13 @@ export async function returnRentals(req, res) {
 
     // Verifica se os valores numéricos são válidos
     const daysRented = returnDate.diff(rentDate, 'day')
-    const gamePricePerDay = rental.game ? rental.game.pricePerDay : null
 
-    if (isNaN(daysRented) || isNaN(gamePricePerDay)) {
+    if (isNaN(daysRented)) {
       return res.status(400).send('Valores inválidos para cálculo')
     }
 
-    // Verifica se o cálculo da delayFee é válido
+    // Calcula a delayFee
+    const gamePricePerDay = rental.game ? rental.game.pricePerDay : 0
     const delayFee =
       Math.max(0, daysRented - rental.daysRented) * gamePricePerDay
 
@@ -195,3 +248,5 @@ export async function deleteRental(req, res) {
     res.status(500).send(err.message)
   }
 }
+
+// O delayFee deveria ser 134, mas foi 0 ao finalizar um aluguel com 2 dias de atraso. Verifique se está calculando o delayFee corretamente. <delay fee esperado> = <preço do jogo por dia> * <dias de atraso> = 67 * 2 = 134 <delay fee calculado> = 0

@@ -7,5 +7,5 @@ export const customersSchema = Joi.object({
     Joi.string().length(10).pattern(/^\d+$/),
     Joi.string().length(11).pattern(/^\d+$/)
   ),
-  birthday: Joi.date().iso()
+  birthday: Joi.date().iso().required()
 })

@@ -1,4 +1,5 @@
 import { db } from '../database/database.connection.js'
+import dayjs from 'dayjs'
 
 export async function postCustomers(req, res) {
   const { name, phone, cpf, birthday } = req.body
@@ -28,7 +29,12 @@ export async function postCustomers(req, res) {
 export async function getCustomers(req, res) {
   try {
     const customers = await db.query(`SELECT * FROM customers;`)
-    res.send(customers.rows)
+
+    const formattedCustomers = customers.rows.map(customer => ({
+      ...customer,
+      birthday: dayjs(customer.birthday).format('YYYY-MM-DD')
+    }))
+    res.send(formattedCustomers)
   } catch (err) {
     res.status(500).send(err.message)
   }
