@@ -74,8 +74,6 @@ export async function returnRentals(req, res) {
 
     const rental = rentalResult.rows[0]
 
-    // console.log(rental)
-
     if (rental.returnDate !== null) {
       return res.status(400).send('Aluguel já foi finalizado')
     }
@@ -88,34 +86,21 @@ export async function returnRentals(req, res) {
       return res.status(400).send('Datas inválidas')
     }
 
-    const currentDate = dayjs()
-
-    const daysRented = rental.daysRented // Supondo que rental.daysRented já contenha o número de dias alugados
-
-    // Calcula o dia previsto para devolução (returnDate)
-    const PrevReturnDate = rentDate.add(daysRented, 'day').toDate()
-
-    // Agora, formate a data de retorno para o formato "YYYY-MM-DD"
-
-    console.log('dia previsto para dev', PrevReturnDate)
-
-    // DIA PREVISTO PARA DEVOLUCAO TEM QUE RECEBER O DIA DO ALUGUEL (rentDate) + DIAS alugados (daysRented)
-
-    // SE DIA PREVISTO PARA DEVOLUCAO < DIA DEVOLVIDO (return data) DIAS DE ATRASADOS DEVE RECEBER ESSA DIFERENÇA DE DIAS.
-
-    // e delayfee deve receber dias de atraso * "pricePerDay"
-
-    // PRECISO RECEBER A DIFERENÇA ENTRE DIA ATUAL E DIA DA DEVOLUCAO
-
-    // Atualiza a returnDate no aluguel existente
+    const prevReturnDate = rentDate.add(rental.daysRented, 'day')
+    const diasAtrasados = Math.max(0, returnDate.diff(prevReturnDate, 'day'))
     rental.returnDate = returnDate.format('YYYY-MM-DD')
 
-    // Agora, atualize o aluguel no banco de dados com as novas informações
+    console.log('prevReturnDate', prevReturnDate)
+    console.log('diasAtrasados', diasAtrasados)
+
+    const gamePricePerDay = rental.game ? rental.game.pricePerDay : 0
+    rental.delayFee = diasAtrasados * gamePricePerDay
+
     const updateQuery = `
-      UPDATE rentals
-      SET "returnDate" = $1, "delayFee" = $2
-      WHERE id = $3
-    `
+    UPDATE rentals
+    SET "returnDate" = $1, "delayFee" = $2
+    WHERE id = $3
+  `
     const values = [returnDate.format('YYYY-MM-DD'), rental.delayFee, id]
     await db.query(updateQuery, values)
 
