@@ -138,13 +138,13 @@ export async function getRentals(req, res) {
 
 //     // Verifica se os valores numéricos são válidos
 //     const daysRented = returnDate.diff(rentDate, 'day')
-//     const gamePricePerDay = rental.game ? rental.game.pricePerDay : null
 
-//     if (isNaN(daysRented) || isNaN(gamePricePerDay)) {
+//     if (isNaN(daysRented)) {
 //       return res.status(400).send('Valores inválidos para cálculo')
 //     }
 
-//     // Verifica se o cálculo da delayFee é válido
+//     // Calcula a delayFee
+//     const gamePricePerDay = rental.game ? rental.game.pricePerDay : 0
 //     const delayFee =
 //       Math.max(0, daysRented - rental.daysRented) * gamePricePerDay
 
