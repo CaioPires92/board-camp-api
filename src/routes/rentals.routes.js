@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import {
+  deleteRental,
   getRentals,
   postRentals,
   returnRentals
@@ -12,6 +13,8 @@ const rentalsRouter = Router()
 rentalsRouter.get('/rentals', getRentals)
 rentalsRouter.post('/rentals', validateSchema(rentalSchema), postRentals)
 rentalsRouter.post('/rentals/:id/return', returnRentals)
+rentalsRouter.delete('/rentals/:id', deleteRental)
+
 // receitasRouter.get("/receitas/:id", getReceitaById)
 // receitasRouter.post("/receitas", validateSchema(receitaSchema), createReceita)
 // receitasRouter.delete("/receitas/:id", deleteReceita)

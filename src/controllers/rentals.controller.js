@@ -164,3 +164,34 @@ export async function returnRentals(req, res) {
     res.status(500).send(err.message)
   }
 }
+
+export async function deleteRental(req, res) {
+  const { id } = req.params
+
+  try {
+    // Verificar se o aluguel com o ID fornecido existe
+    const rentalQuery = 'SELECT * FROM rentals WHERE id = $1'
+    const rentalResult = await db.query(rentalQuery, [id])
+
+    if (rentalResult.rows.length === 0) {
+      return res.status(404).send('Aluguel não encontrado')
+    }
+
+    const rental = rentalResult.rows[0]
+
+    // Verificar se o aluguel já está finalizado
+    if (rental.returnDate !== null) {
+      return res
+        .status(400)
+        .send('Aluguel já foi finalizado e não pode ser excluído')
+    }
+
+    // Se o aluguel existe e não está finalizado, podemos prosseguir com a exclusão
+    const deleteQuery = 'DELETE FROM rentals WHERE id = $1'
+    await db.query(deleteQuery, [id])
+
+    res.sendStatus(200)
+  } catch (err) {
+    res.status(500).send(err.message)
+  }
+}
