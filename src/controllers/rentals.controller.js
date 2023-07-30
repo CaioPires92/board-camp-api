@@ -233,13 +233,13 @@ export async function deleteRental(req, res) {
     const rental = rentalResult.rows[0]
 
     // Verificar se o aluguel já está finalizado
-    if (rental.returnDate !== null) {
+    if (rental.returnDate === null) {
       return res
         .status(400)
-        .send('Aluguel já foi finalizado e não pode ser excluído')
+        .send('Aluguel ainda não foi finalizado e não ser excluído')
     }
 
-    // Se o aluguel existe e não está finalizado, podemos prosseguir com a exclusão
+    // Se o aluguel existe e está finalizado, podemos prosseguir com a exclusão
     const deleteQuery = 'DELETE FROM rentals WHERE id = $1'
     await db.query(deleteQuery, [id])
 
