@@ -200,11 +200,13 @@ export async function returnRentals(req, res) {
       }
 
       const gamePricePerDay = rental.game ? rental.game.pricePerDay : 0
+
+      // Calcula o delayFee
       const delayFee =
         Math.max(0, daysRented - rental.daysRented) * gamePricePerDay
 
       // Atualiza a delayFee no aluguel existente
-      rental.delayFee += delayFee
+      rental.delayFee = delayFee
     }
 
     // Atualiza a returnDate no aluguel existente
