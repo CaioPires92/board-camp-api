@@ -137,7 +137,7 @@ export async function getRentals(req, res) {
 //     }
 
 //     // Verifica se os valores numéricos são válidos
-//     const daysRented = returnDate.diff(rentDate, 'day')
+//     const daysRented = rental.daysRented
 
 //     if (isNaN(daysRented)) {
 //       return res.status(400).send('Valores inválidos para cálculo')
@@ -183,34 +183,41 @@ export async function returnRentals(req, res) {
     }
 
     const returnDate = dayjs()
+
     const rentDate = dayjs(rental.rentDate)
 
     if (!returnDate.isValid() || !rentDate.isValid()) {
       return res.status(400).send('Datas inválidas')
     }
 
-    // Verifica se os valores numéricos são válidos
-    const daysRented = rental.daysRented
+    // Verifica se a data atual é maior que a returnDate
+    const currentDate = dayjs()
+    if (currentDate.isAfter(returnDate)) {
+      const daysRented = returnDate.diff(rentDate, 'day')
 
-    if (isNaN(daysRented)) {
-      return res.status(400).send('Valores inválidos para cálculo')
+      if (isNaN(daysRented)) {
+        return res.status(400).send('Valores inválidos para cálculo')
+      }
+
+      const gamePricePerDay = rental.game ? rental.game.pricePerDay : 0
+      const delayFee =
+        Math.max(0, daysRented - rental.daysRented) * gamePricePerDay
+
+      // Atualiza a delayFee no aluguel existente
+      rental.delayFee += delayFee
     }
 
-    // Calcula a delayFee
-    const gamePricePerDay = rental.game ? rental.game.pricePerDay : 0
-    const delayFee =
-      Math.max(0, daysRented - rental.daysRented) * gamePricePerDay
+    // Atualiza a returnDate no aluguel existente
+    rental.returnDate = returnDate.format('YYYY-MM-DD')
 
+    // Agora, atualize o aluguel no banco de dados com as novas informações
     const updateQuery = `
       UPDATE rentals
       SET "returnDate" = $1, "delayFee" = $2
       WHERE id = $3
     `
-    const values = [returnDate.format('YYYY-MM-DD'), delayFee, id]
+    const values = [returnDate.format('YYYY-MM-DD'), rental.delayFee, id]
     await db.query(updateQuery, values)
-
-    // Agora, formate a data de retorno para o formato "YYYY-MM-DD"
-    rental.returnDate = returnDate.format('YYYY-MM-DD')
 
     res.status(200).json(rental)
   } catch (err) {
